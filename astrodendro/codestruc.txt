@@ -1,0 +1,48 @@
+analysis:
+
+PPV_catalog:
+return _make_catalog(structures, fields, metadata, PPVStatistic, verbose)
+fields=['major_sigma' etc]
+
+_make_catalog:
+values = struct.values(subtree=True)
+indices = np.copy(struct.indices(subtree=True))
+stat = ScalarStatistic(values, indices)
+stat = statistic(stat, metadata)
+row = {}
+for lbl in fields:
+    row[lbl] = getattr(stat, lbl)
+
+ScalarStatistic class has methods like major_sigma etc
+statistic is a PPVStatistic here, which is a SpatialBase
+
+so I need to define a new propertie of the PPVStatistic,
+or possibly of the SpatialBase if it can work in 2d.
+call it ellvariance?
+
+# perimeter points
+
+# for the center of gravity, use the already area-defined center
+u = [self.x_cen,self.y_cen]
+# covariance matrix
+C = 
+
+
+# instead, use the area-based method of KAK
+modified
+https://link.springer.com/chapter/10.1007/978-3-540-30125-7_50
+intersection / union
+
+even better we could test # points in ellipse = intersection
++ # points outside ellipse = union
+
+
+
+
+-----------------
+analysis.py
+major_sigma = dx sqrt(mom2)
+radius = sqrt(major_sigma*minor_sigma)
+area_ellipse = pi major_sigma minor_sigma (2.3548/2)**2
+# so area_ellipse is a half-max area
+
