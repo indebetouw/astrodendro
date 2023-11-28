@@ -50,6 +50,11 @@ def compute_flux(input_quantities, output_unit, wavelength=None, spatial_scale=N
         # Simply sum up the values and convert to output unit
         total_flux = quantity_sum(input_quantities).to(u.Jy)
 
+    elif input_quantities.unit.is_equivalent(u.Jy * u.km / u.s):  # Fnu*km/s
+
+        # Simply sum up the values and convert to output unit
+        total_flux = quantity_sum(input_quantities).to(u.Jy * u.km / u.s)
+
     elif input_quantities.unit.is_equivalent(u.erg / u.cm ** 2 / u.s / u.m):  # Flambda
 
         if wavelength is not None and not wavelength.unit.is_equivalent(u.m):
@@ -85,7 +90,7 @@ def compute_flux(input_quantities, output_unit, wavelength=None, spatial_scale=N
         # Find total flux in Jy
         total_flux = quantity_sum(q)
 
-    elif input_quantities.unit.is_equivalent(u.Jy / u.beam):
+    elif input_quantities.unit.is_equivalent(u.Jy / u.beam) or input_quantities.unit.is_equivalent(u.Jy / u.beam * u.km / u.s):
 
         if spatial_scale is not None and not spatial_scale.unit.is_equivalent(u.degree):
             raise ValueError("spatial_scale should be an angle")
@@ -109,12 +114,16 @@ def compute_flux(input_quantities, output_unit, wavelength=None, spatial_scale=N
         beams_per_pixel = spatial_scale ** 2 / (beam_minor * beam_major * 1.1331) * u.beam
 
         # Convert input quantity to Fnu in Jy
-        q = (input_quantities * beams_per_pixel).to(u.Jy)
+        if input_quantities.unit.is_equivalent(u.Jy / u.beam):
+           q = (input_quantities * beams_per_pixel).to(u.Jy)
+        else:
+           q = (input_quantities * beams_per_pixel).to(u.Jy *u.km / u.s)
 
         # Find total flux in Jy
         total_flux = quantity_sum(q)
 
-    elif input_quantities.unit.is_equivalent(u.K):
+        #----------------------------------------------------------------
+    elif input_quantities.unit.is_equivalent(u.K) or input_quantities.unit.is_equivalent(u.K *u.km/u.s):
 
         if spatial_scale is not None and not spatial_scale.unit.is_equivalent(u.degree):
             raise ValueError("spatial_scale should be an angle")
@@ -156,19 +165,24 @@ def compute_flux(input_quantities, output_unit, wavelength=None, spatial_scale=N
 
         # Convert input quantity to Fnu in Jy
         # Implicitly, this equivalency gives the Janskys in a single beam, so we make this explicit by dividing out a beam
-        jansky_per_beam = input_quantities.to(u.Jy,
-                                              equivalencies=u.brightness_temperature(nu, beam_area=omega_beam)) / u.beam
-
+        if input_quantities.unit.is_equivalent(u.K):        
+           jansky_per_beam = input_quantities.to(u.Jy, 
+               equivalencies=u.brightness_temperature(nu, beam_area=omega_beam)) / u.beam
+        else:
+           jansky_per_beam = (input_quantities*u.s/u.km).to(u.Jy, 
+               equivalencies=u.brightness_temperature(nu, beam_area=omega_beam)) / u.beam * u.km/u.s
+           
         q = jansky_per_beam * beams_per_pixel
 
-        # Find total flux in Jy
+        # Find total flux in Jy or Jy *km/s
         total_flux = quantity_sum(q)
 
     else:
 
         raise ValueError("Flux units {0} not yet supported".format(input_quantities.unit))
 
-    if not output_unit.is_equivalent(u.Jy):
-        raise ValueError("output_unit has to be equivalent to Jy")
-    else:
-        return total_flux.to(output_unit)
+    #if not output_unit.is_equivalent(u.Jy):
+    #    raise ValueError("output_unit has to be equivalent to Jy")
+    #else:
+
+    return total_flux.to(output_unit)

@@ -444,10 +444,28 @@ class PPVStatistic(SpatialBase):
         The integrated flux of the structure, in Jy (note that this does not
         include any kind of background subtraction, and is just a plain sum of
         the values in the structure, converted to Jy).
+        NOTE: this adds in the velocity direction, so is wrong. you want Flux
         """
         from .flux import compute_flux
         return compute_flux(self.stat.mom0() * self.data_unit,
                             u.Jy,
+                            wavelength=self.wavelength,
+                            spatial_scale=self.spatial_scale,
+                            velocity_scale=self.velocity_scale,
+                            beam_major=self.beam_major,
+                            beam_minor=self.beam_minor)
+
+    @property
+    def Flux(self):
+        """
+        The integrated flux of the structure, in Jy*km/s 
+        (note that this does not
+        include any kind of background subtraction, and is just a plain sum of
+        the values in the structure).
+        """
+        from .flux import compute_flux
+        return compute_flux(self.stat.mom0() * self.data_unit * self.velocity_scale,
+                            u.Jy *u.km / u.s,
                             wavelength=self.wavelength,
                             spatial_scale=self.spatial_scale,
                             velocity_scale=self.velocity_scale,
@@ -680,8 +698,10 @@ def _make_catalog(structures, fields, metadata, statistic, verbose=False, clippi
             stat = ScalarStatistic(values-np.nanmin(values), indices)
         else:
             stat = ScalarStatistic(values, indices)
+
         stat = statistic(stat, metadata)
         row = {}
+
         for lbl in fields:
             row[lbl] = getattr(stat, lbl)
 
@@ -754,7 +774,7 @@ def ppv_catalog(structures, metadata, fields=None, verbose=True, clipping=False)
     table : a :class:`~astropy.table.table.Table` instance
         The resulting catalog
     """
-    fields = fields or ['major_sigma', 'minor_sigma', 'radius', 'area_ellipse', 'area_exact',
+    fields = fields or ['Flux','major_sigma', 'minor_sigma', 'radius', 'area_ellipse', 'area_exact',
                         'position_angle', 'v_rms', 'x_cen', 'y_cen', 'v_cen', 'flux']
 
     with warnings.catch_warnings():
